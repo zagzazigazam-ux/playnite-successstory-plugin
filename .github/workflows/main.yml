@@ -1,1 +1,30 @@
+name: Build SuccessStory (.pext)
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Build plugin
+      run: |
+        dotnet build source/SuccessStory/SuccessStory.csproj -c Release
+        mkdir pext_output
+        # Aici se va genera pext-ul în funcție de structură
+    
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SuccessStory_3_7_1_1.pext
+        path: source/SuccessStory/bin/Release/*.pext
