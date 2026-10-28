@@ -17,14 +17,18 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Build plugin
+    - name: Find and Build
       run: |
-        dotnet build source/SuccessStory/SuccessStory.csproj -c Release
-        mkdir pext_output
-        # Aici se va genera pext-ul în funcție de structură
-    
+        $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
+        if (-not $csproj) {
+            Write-Error "Nu s-a gasit SuccessStory.csproj!"
+            exit 1
+        }
+        Write-Host "S-a gasit proiectul la: $($csproj.FullName)"
+        dotnet build $csproj.FullName -c Release
+        
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SuccessStory_3_7_1_1.pext
-        path: source/SuccessStory/bin/Release/*.pext
+        path: "**/bin/Release/*.pext"
