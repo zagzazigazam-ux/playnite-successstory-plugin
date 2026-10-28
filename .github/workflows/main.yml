@@ -34,7 +34,7 @@ jobs:
             exit 1
         }
         Write-Host "S-a gasit proiectul la: $($csproj.FullName)"
-        dotnet build $csproj.FullName -c Release --no-restore
+        dotnet build $csproj.FullName -c Release
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
