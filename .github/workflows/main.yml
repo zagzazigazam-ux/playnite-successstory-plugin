@@ -15,16 +15,16 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
-    - name: Setup .NET
+    - name: Setup .NET 6.0
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '6.0.x'
 
-    - name: Restore NuGet packages
+    - name: Restore dependencies
       run: |
         git submodule update --init --recursive --force
         $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-        dotnet restore $csproj.FullName --ignore-failed-sources
+        dotnet restore $csproj.FullName --force
 
     - name: Build plugin
       run: |
