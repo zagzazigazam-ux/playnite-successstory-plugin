@@ -25,14 +25,14 @@ jobs:
         git submodule sync --recursive
         git submodule update --init --recursive --force
 
-    - name: Build Project Dynamically
+    - name: Restore and Build Project
       run: |
         $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
         if (-not $csproj) {
             Write-Error "Nu s-a gasit SuccessStory.csproj!"
             exit 1
         }
-        Write-Host "Se restaurează și compilează: $($csproj.FullName)"
+        Write-Host "Se utilizează proiectul găsit la: $($csproj.FullName)"
         dotnet restore $csproj.FullName --force
         dotnet build $csproj.FullName -c Release --no-restore
         
