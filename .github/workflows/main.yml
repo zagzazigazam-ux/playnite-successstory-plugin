@@ -25,16 +25,16 @@ jobs:
         git submodule sync --recursive
         git submodule update --init --recursive --force
 
-    - name: Restore and Build Project
+    - name: Restore and Build Solution
       run: |
-        $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-        if (-not $csproj) {
-            Write-Error "Nu s-a gasit SuccessStory.csproj!"
+        $sln = Get-ChildItem -Recurse -Filter "*.sln" | Select-Object -First 1
+        if (-not $sln) {
+            Write-Error "Nu s-a gasit nicio solutie (.sln)!"
             exit 1
         }
-        Write-Host "Se utilizează proiectul găsit la: $($csproj.FullName)"
-        dotnet restore $csproj.FullName --force
-        dotnet build $csproj.FullName -c Release --no-restore
+        Write-Host "Se utilizeaza solutia gasita la: $($sln.FullName)"
+        dotnet restore $sln.FullName --force
+        dotnet build $sln.FullName -c Release
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
