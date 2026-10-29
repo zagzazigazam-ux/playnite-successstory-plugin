@@ -25,27 +25,13 @@ jobs:
         git submodule sync --recursive
         git submodule update --init --recursive --force
 
-    - name: Restore Solution
+    - name: Restore NuGet Packages
       run: |
-        $sln = Get-ChildItem -Recurse -Filter "*.sln" | Select-Object -First 1
-        if ($sln) {
-            Write-Host "Se restaurează soluția: $($sln.FullName)"
-            dotnet restore $sln.FullName --force
-        } else {
-            $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-            dotnet restore $csproj.FullName --force
-        }
+        dotnet restore source/SuccessStory/SuccessStory.csproj --force
 
-    - name: Build Solution / Project
+    - name: Build Project
       run: |
-        $sln = Get-ChildItem -Recurse -Filter "*.sln" | Select-Object -First 1
-        if ($sln) {
-            Write-Host "Se compilează soluția: $($sln.FullName)"
-            dotnet build $sln.FullName -c Release
-        } else {
-            $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-            dotnet build $csproj.FullName -c Release
-        }
+        dotnet build source/SuccessStory/SuccessStory.csproj -c Release --no-restore
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
