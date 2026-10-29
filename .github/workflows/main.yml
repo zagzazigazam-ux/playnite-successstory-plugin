@@ -20,25 +20,32 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Initialize Submodules Correctly
+    - name: Initialize Submodules
       run: |
         git submodule sync --recursive
         git submodule update --init --recursive --force
 
-    - name: Restore dependencies
+    - name: Restore Solution
       run: |
-        $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-        dotnet restore $csproj.FullName --force
-
-    - name: Build plugin
-      run: |
-        $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-        if (-not $csproj) {
-            Write-Error "Nu s-a gasit SuccessStory.csproj!"
-            exit 1
+        $sln = Get-ChildItem -Recurse -Filter "*.sln" | Select-Object -First 1
+        if ($sln) {
+            Write-Host "Se restaurează soluția: $($sln.FullName)"
+            dotnet restore $sln.FullName --force
+        } else {
+            $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
+            dotnet restore $csproj.FullName --force
         }
-        Write-Host "Se compilează proiectul: $($csproj.FullName)"
-        dotnet build $csproj.FullName -c Release --no-restore
+
+    - name: Build Solution / Project
+      run: |
+        $sln = Get-ChildItem -Recurse -Filter "*.sln" | Select-Object -First 1
+        if ($sln) {
+            Write-Host "Se compilează soluția: $($sln.FullName)"
+            dotnet build $sln.FullName -c Release
+        } else {
+            $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
+            dotnet build $csproj.FullName -c Release
+        }
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
