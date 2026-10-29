@@ -25,13 +25,16 @@ jobs:
         git submodule sync --recursive
         git submodule update --init --recursive --force
 
-    - name: Restore NuGet Packages
+    - name: Build Project Dynamically
       run: |
-        dotnet restore source/SuccessStory/SuccessStory.csproj --force
-
-    - name: Build Project
-      run: |
-        dotnet build source/SuccessStory/SuccessStory.csproj -c Release --no-restore
+        $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
+        if (-not $csproj) {
+            Write-Error "Nu s-a gasit SuccessStory.csproj!"
+            exit 1
+        }
+        Write-Host "Se restaurează și compilează: $($csproj.FullName)"
+        dotnet restore $csproj.FullName --force
+        dotnet build $csproj.FullName -c Release --no-restore
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
