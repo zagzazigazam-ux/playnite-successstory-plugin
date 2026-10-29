@@ -20,20 +20,16 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Restore dependencies
+    - name: Fix Submodules and Restore
       run: |
-        git submodule update --init --recursive
+        git submodule foreach --recursive git checkout master || true
+        git submodule update --init --recursive --force
         $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
         dotnet restore $csproj.FullName
 
-    - name: Find and Build
+    - name: Build plugin
       run: |
         $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
-        if (-not $csproj) {
-            Write-Error "Nu s-a gasit SuccessStory.csproj!"
-            exit 1
-        }
-        Write-Host "S-a gasit proiectul la: $($csproj.FullName)"
         dotnet build $csproj.FullName -c Release
         
     - name: Upload Artifact
