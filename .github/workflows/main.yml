@@ -20,9 +20,13 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
+    - name: Initialize Submodules Correctly
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --force
+
     - name: Restore dependencies
       run: |
-        git submodule update --init --recursive --force
         $csproj = Get-ChildItem -Recurse -Filter "SuccessStory.csproj" | Select-Object -First 1
         dotnet restore $csproj.FullName --force
 
