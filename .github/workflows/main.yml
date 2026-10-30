@@ -18,22 +18,58 @@ jobs:
 
     - uses: nuget/setup-nuget@v2
 
-    - name: Restore (packages.config)
+    # Proiectul e .NET Framework 4.6.2 cu packages.config -> NuGet clasic, nu "dotnet restore".
+    # Pachetele ajung in source/packages, exact de unde le asteapta HintPath din .csproj.
+    - name: Restore NuGet packages
+      run: nuget restore source/SuccessStory.sln
+
+    # Se compileaza .sln (nu .csproj) ca sa fie definit $(SolutionDir), folosit de post-build.
+    - name: Build
+      run: msbuild source/SuccessStory.sln /p:Configuration=Release /m /v:minimal
+
+    # Post-build-ul din proiect cauta toolbox.exe in C:\Playnite_dev (inexistent pe runner),
+    # deci nu produce .pext. Il impachetam manual: un .pext este un ZIP cu continutul din bin\Release.
+    - name: Package .pext
+      shell: pwsh
       run: |
-        if (Test-Path source/SuccessStory.sln) {
-          nuget restore source/SuccessStory.sln
-        } else {
-          nuget restore source/SuccessStory.csproj -SolutionDirectory source
+        $src = (Resolve-Path "source/bin/Release").Path
+
+        foreach ($required in @("SuccessStory.dll", "extension.yaml")) {
+          if (-not (Test-Path (Join-Path $src $required))) {
+            Write-Error "Lipseste $required din $src - build-ul nu a produs output complet."
+            exit 1
+          }
         }
 
-    - name: Build
-      run: |
-        $target = if (Test-Path source/SuccessStory.sln) { "source/SuccessStory.sln" } else { "source/SuccessStory.csproj" }
-        msbuild $target /p:Configuration=Release /m
+        $yaml    = Get-Content "source/extension.yaml"
+        $id      = (($yaml | Where-Object { $_ -match '^Id:' })      -replace '^Id:\s*', '').Trim()
+        $version = (($yaml | Where-Object { $_ -match '^Version:' }) -replace '^Version:\s*', '').Trim()
+        $pextName = "{0}_{1}.pext" -f $id, ($version -replace '\.', '_')
+        Write-Host "Pachet: $pextName"
+
+        $stage = Join-Path $env:RUNNER_TEMP "pext_stage"
+        $dist  = Join-Path $env:GITHUB_WORKSPACE "dist"
+        New-Item -ItemType Directory -Force $stage, $dist | Out-Null
+
+        Get-ChildItem $src -Recurse -File |
+          Where-Object { $_.Extension -ne ".pdb" -and $_.Name -ne "Playnite.SDK.dll" } |
+          ForEach-Object {
+            $rel  = $_.FullName.Substring($src.Length).TrimStart('\', '/')
+            $dest = Join-Path $stage $rel
+            New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
+            Copy-Item $_.FullName $dest
+          }
+
+        $pext = Join-Path $dist $pextName
+        if (Test-Path $pext) { Remove-Item $pext -Force }
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $pext)
+
+        Write-Host ("Creat: {0} ({1:N1} MB)" -f $pext, ((Get-Item $pext).Length / 1MB))
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SuccessStory-build
-        path: "**/bin/Release/**"
-        if-no-files-found: warn
+        name: SuccessStory-pext
+        path: dist/*.pext
+        if-no-files-found: error
